@@ -1,0 +1,83 @@
+/* App.css */
+
+/* ページ全体の背景とフォント */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Arial', sans-serif;
+  background-color: #f0f0f5;
+}
+
+/* 全体のレイアウトを中央寄せ */
+.App {
+  text-align: center;
+  padding: 20px;
+}
+
+/* 大きな見出し */
+h1 {
+  color: #333;
+  font-size: 2.5rem;
+  margin-bottom: 20px;
+}
+
+/* 質問部分のスタイル */
+h2 {
+  color: #555;
+  font-size: 1.5rem;
+  margin-bottom: 20px;
+}
+
+/* 質問コンテナ部分の背景色と影 */
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: #fff;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+}
+
+/* ボタンをグリッド状に並べるための親要素のスタイル */
+.button-container {
+  display: flex;
+  flex-wrap: wrap; /* ボタンを折り返す設定 */
+  justify-content: space-between; /* ボタンを均等に配置 */
+  max-width: 1000px; /* ボタンの配置幅を指定 */
+  margin: 0 auto;
+  gap: 10px; /* ボタン同士の間隔を設定 */
+}
+
+/* ボタンのスタイル */
+button {
+  padding: 15px 30px;
+  font-size: 1.25rem;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  flex: 1 1 calc(20% - 20px); /* 5つ並べるための設定 */
+  margin: 5px; /* ボタン同士の余白 */
+}
+
+/* ボタンをホバーしたときの効果 */
+button:hover {
+  background-color: #45a049;
+}
+
+/* モバイル用のレスポンシブデザイン */
+@media (max-width: 600px) {
+  button {
+    width: 100%; /* ボタンが画面全体に広がる */
+    font-size: 1.1rem;
+  }
+
+  h1 {
+    font-size: 2rem;
+  }
+
+  h2 {
+    font-size: 1.2rem;
+  }
+}
