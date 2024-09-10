@@ -46,29 +46,30 @@ const questionsData = [
 
 function App() {
   const [currentQuestionId, setCurrentQuestionId] = useState(1);
-  const currentQuestion = questionsData.find(q => q.id === currentQuestionId);
   const [recognitionActive, setRecognitionActive] = useState(false);
   const [transcript, setTranscript] = useState('');
+  const [diagnosticHistory, setDiagnosticHistory] = useState([]); // 新しい状態変数
+
+  const currentQuestion = questionsData.find(q => q.id === currentQuestionId);
 
   // Web Speech API を使った音声認識
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
       const recognition = new SpeechRecognition();
-      recognition.lang = 'ja-JP'; // 日本語を指定
-      recognition.interimResults = false; // 結果を最終的なものにする
-      recognition.continuous = false; // 1回だけ音声認識を行う
+      recognition.lang = 'ja-JP';
+      recognition.interimResults = false;
+      recognition.continuous = false;
       recognition.onresult = (event) => {
         const speechResult = event.results[0][0].transcript;
         setTranscript(speechResult);
-        handleVoiceCommand(speechResult); // 音声認識結果を元に回答を選択
+        handleVoiceCommand(speechResult);
       };
 
       recognition.onend = () => {
         setRecognitionActive(false);
       };
 
-      // 音声認識を開始する関数
       const startRecognition = () => {
         if (!recognitionActive) {
           setRecognitionActive(true);
@@ -81,7 +82,6 @@ function App() {
         recognitionButton.addEventListener('click', startRecognition);
       }
 
-      // クリーンアップ処理
       return () => {
         if (recognitionButton) {
           recognitionButton.removeEventListener('click', startRecognition);
@@ -92,43 +92,44 @@ function App() {
     }
   }, [recognitionActive]);
 
-  // 音声認識の結果に基づいて質問に答える処理
   const handleVoiceCommand = (speechResult) => {
-    const normalizedResult = speechResult.trim(); // 音声結果をトリムして余分なスペースを削除
+    const normalizedResult = speechResult.trim();
     
-  // 数字に対応する正規表現パターンを使用してテキストをマッチ
-  const numberPatterns = [
-    { pattern: /いち|1/, value: "1" },
-    { pattern: /に|2/, value: "2" },
-    { pattern: /さん|3/, value: "3" },
-    { pattern: /よん|4/, value: "4" },
-    { pattern: /ご|5/, value: "5" },
-    { pattern: /ろく|6/, value: "6" },
-    { pattern: /しち|7/, value: "7" },
-    { pattern: /はち|8/, value: "8" },
-    { pattern: /きゅう|9/, value: "9" },
-    { pattern: /じゅう|10/, value: "10" }
-  ];
+    const numberPatterns = [
+      { pattern: /いち|1/, value: "1" },
+      { pattern: /に|2/, value: "2" },
+      { pattern: /さん|3/, value: "3" },
+      { pattern: /よん|4/, value: "4" },
+      { pattern: /ご|5/, value: "5" },
+      { pattern: /ろく|6/, value: "6" },
+      { pattern: /しち|7/, value: "7" },
+      { pattern: /はち|8/, value: "8" },
+      { pattern: /きゅう|9/, value: "9" },
+      { pattern: /じゅう|10/, value: "10" }
+    ];
 
-  // 正規表現で認識結果をマッチ
-  const matchedResult = numberPatterns.find(({ pattern }) => pattern.test(normalizedResult));
+    const matchedResult = numberPatterns.find(({ pattern }) => pattern.test(normalizedResult));
+    const mappedResult = matchedResult ? matchedResult.value : normalizedResult;
 
-  const mappedResult = matchedResult ? matchedResult.value : normalizedResult;
-
-  const option = currentQuestion.options.find(o => o.text === mappedResult);
+    const option = currentQuestion.options.find(o => o.text === mappedResult);
     if (option) {
-      if (option.nextQuestionId) {
-        setCurrentQuestionId(option.nextQuestionId);
-      } else {
-        alert("問診が完了しました。");
-      }
+      handleAnswer(option.text, option.nextQuestionId);
     } else {
       alert("認識できませんでした。もう一度試してください。");
     }
   };
 
-  // ボタンのクリックで質問を進める処理
-  const handleOptionClick = (nextQuestionId) => {
+  const handleOptionClick = (optionText, nextQuestionId) => {
+    handleAnswer(optionText, nextQuestionId);
+  };
+
+  const handleAnswer = (answerText, nextQuestionId) => {
+    // 問診履歴に追加
+    setDiagnosticHistory(prevHistory => [
+      ...prevHistory,
+      { question: currentQuestion.question, answer: answerText }
+    ]);
+
     if (nextQuestionId) {
       setCurrentQuestionId(nextQuestionId);
     } else {
@@ -144,7 +145,7 @@ function App() {
           <h2>{currentQuestion.question}</h2>
           <div className="button-container">
             {currentQuestion.options.map((option, index) => (
-              <button key={index} onClick={() => handleOptionClick(option.nextQuestionId)}>
+              <button key={index} onClick={() => handleOptionClick(option.text, option.nextQuestionId)}>
                 {option.text}
               </button>
             ))}
@@ -155,6 +156,16 @@ function App() {
           </button>
         </div>
       )}
+      <div className="diagnostic-history">
+        <h3>問診履歴</h3>
+        <ul>
+          {diagnosticHistory.map((item, index) => (
+            <li key={index}>
+              <strong>{item.question}</strong>: {item.answer}
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }
