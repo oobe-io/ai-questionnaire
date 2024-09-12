@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 
 const questionsData = [
@@ -45,17 +45,27 @@ const questionsData = [
 ];
 
 function App() {
-  const [currentQuestionId, setCurrentQuestionId] = useState(1);
+  const [currentQuestionId, setCurrentQuestionId] = useState(0);
   const [recognitionActive, setRecognitionActive] = useState(false);
   const [transcript, setTranscript] = useState('');
-  const [diagnosticHistory, setDiagnosticHistory] = useState([]); // 新しい状態変数
+  const [diagnosticHistory, setDiagnosticHistory] = useState([]);
+  const [mode, setMode] = useState(null);
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [editingIndex, setEditingIndex] = useState(null);
+  const [fallbackOptions, setFallbackOptions] = useState(null);
+  const speechSynthesisRef = useRef(null);
 
   const currentQuestion = questionsData.find(q => q.id === currentQuestionId);
 
-  // Web Speech API を使った音声認識
+  useEffect(() => {
+    if (mode === 'voice' && currentQuestion) {
+      speakQuestion(currentQuestion.question);
+    }
+  }, [currentQuestion, mode]);
+
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (SpeechRecognition) {
+    if (SpeechRecognition && mode === 'voice') {
       const recognition = new SpeechRecognition();
       recognition.lang = 'ja-JP';
       recognition.interimResults = false;
@@ -87,44 +97,44 @@ function App() {
           recognitionButton.removeEventListener('click', startRecognition);
         }
       };
-    } else {
-      alert("Web Speech APIがこのブラウザでサポートされていません");
     }
-  }, [recognitionActive]);
+  }, [recognitionActive, mode]);
 
   const handleVoiceCommand = (speechResult) => {
-    const normalizedResult = speechResult.trim();
+    const normalizedResult = speechResult.trim().toLowerCase();
     
-    const numberPatterns = [
-      { pattern: /いち|1/, value: "1" },
-      { pattern: /に|2/, value: "2" },
-      { pattern: /さん|3/, value: "3" },
-      { pattern: /よん|4/, value: "4" },
-      { pattern: /ご|5/, value: "5" },
-      { pattern: /ろく|6/, value: "6" },
-      { pattern: /しち|7/, value: "7" },
-      { pattern: /はち|8/, value: "8" },
-      { pattern: /きゅう|9/, value: "9" },
-      { pattern: /じゅう|10/, value: "10" }
-    ];
+    const yesExpressions = ['はい', 'そうです', 'ええ', 'あります', 'はい、です'];
+    const noExpressions = ['いいえ', 'ちがいます', 'ありません', 'いいえ、違います'];
 
-    const matchedResult = numberPatterns.find(({ pattern }) => pattern.test(normalizedResult));
-    const mappedResult = matchedResult ? matchedResult.value : normalizedResult;
+    const findMatchingOption = () => {
+      return currentQuestion.options.find(option => {
+        const optionText = option.text.toLowerCase();
+        if (yesExpressions.includes(optionText)) {
+          return yesExpressions.some(expr => normalizedResult.includes(expr));
+        } else if (noExpressions.includes(optionText)) {
+          return noExpressions.some(expr => normalizedResult.includes(expr));
+        } else {
+          return normalizedResult.includes(optionText);
+        }
+      });
+    };
 
-    const option = currentQuestion.options.find(o => o.text === mappedResult);
-    if (option) {
-      handleAnswer(option.text, option.nextQuestionId);
+    const matchedOption = findMatchingOption();
+
+    if (matchedOption) {
+      handleAnswer(matchedOption.text, matchedOption.nextQuestionId);
     } else {
-      alert("認識できませんでした。もう一度試してください。");
+      speakText("すみません、はっきりと聞き取れませんでした。次の選択肢からお選びください。");
+      setFallbackOptions(currentQuestion.options);
     }
   };
 
   const handleOptionClick = (optionText, nextQuestionId) => {
     handleAnswer(optionText, nextQuestionId);
+    setFallbackOptions(null);
   };
 
   const handleAnswer = (answerText, nextQuestionId) => {
-    // 問診履歴に追加
     setDiagnosticHistory(prevHistory => [
       ...prevHistory,
       { question: currentQuestion.question, answer: answerText }
@@ -133,27 +143,159 @@ function App() {
     if (nextQuestionId) {
       setCurrentQuestionId(nextQuestionId);
     } else {
-      alert("問診が完了しました。");
+      completeDiagnosis();
     }
   };
+
+  const completeDiagnosis = () => {
+    setIsCompleted(true);
+    if (mode === 'voice') {
+      speakText("問診が完了しました。結果を画面に表示しています。");
+    }
+  };
+
+  const speakText = (text) => {
+    if ('speechSynthesis' in window) {
+      if (speechSynthesisRef.current) {
+        window.speechSynthesis.cancel();
+      }
+      
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'ja-JP';
+      
+      const loadVoices = () => {
+        const voices = window.speechSynthesis.getVoices();
+        const japaneseVoice = voices.find(voice => voice.lang === 'ja-JP' && voice.name.includes('Female'));
+        if (japaneseVoice) {
+          utterance.voice = japaneseVoice;
+        }
+        window.speechSynthesis.speak(utterance);
+      };
+
+      if (window.speechSynthesis.getVoices().length > 0) {
+        loadVoices();
+      } else {
+        window.speechSynthesis.onvoiceschanged = loadVoices;
+      }
+
+      speechSynthesisRef.current = utterance;
+    }
+  };
+
+  const speakQuestion = (question) => {
+    speakText(question);
+  };
+
+  const startDiagnosis = (selectedMode) => {
+    setMode(selectedMode);
+    setCurrentQuestionId(1);
+    setDiagnosticHistory([]);
+    setIsCompleted(false);
+  };
+
+  const resetDiagnosis = () => {
+    setMode(null);
+    setCurrentQuestionId(0);
+    setDiagnosticHistory([]);
+    setIsCompleted(false);
+  };
+
+  const handleEdit = (index) => {
+    setEditingIndex(index);
+  };
+
+  const handleSave = (index, newAnswer) => {
+    setDiagnosticHistory(prevHistory => 
+      prevHistory.map((item, i) => 
+        i === index ? { ...item, answer: newAnswer } : item
+      )
+    );
+    setEditingIndex(null);
+  };
+
+  const handleRepeat = () => {
+    if (currentQuestion) {
+      speakQuestion(currentQuestion.question);
+    }
+  };
+
+  if (mode === null) {
+    return (
+      <div className="App">
+        <h1>AI問診アプリ</h1>
+        <div className="mode-selection">
+          <button onClick={() => startDiagnosis('voice')}>音声モード</button>
+          <button onClick={() => startDiagnosis('selection')}>選択モード</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (isCompleted) {
+    return (
+      <div className="App">
+        <h1>問診結果</h1>
+        <div className="diagnostic-history">
+          <ul>
+            {diagnosticHistory.map((item, index) => (
+              <li key={index} className="diagnostic-item">
+                <div className="question-answer">
+                  <strong>{item.question}</strong>
+                  {editingIndex === index ? (
+                    <input
+                      type="text"
+                      value={item.answer}
+                      onChange={(e) => handleSave(index, e.target.value)}
+                      onBlur={() => setEditingIndex(null)}
+                      autoFocus
+                    />
+                  ) : (
+                    <span>{item.answer}</span>
+                  )}
+                </div>
+                <button className="edit-button" onClick={() => handleEdit(index)}>編集</button>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <button className="return-button" onClick={resetDiagnosis}>トップへ戻る</button>
+      </div>
+    );
+  }
 
   return (
     <div className="App">
       <h1>AI問診アプリ</h1>
       {currentQuestion && (
         <div className="container">
-          <h2>{currentQuestion.question}</h2>
-          <div className="button-container">
-            {currentQuestion.options.map((option, index) => (
-              <button key={index} onClick={() => handleOptionClick(option.text, option.nextQuestionId)}>
-                {option.text}
+          <div className="question-container">
+            <h2>{currentQuestion.question}</h2>
+            {mode === 'voice' && (
+              <button className="repeat-button" onClick={handleRepeat} aria-label="質問を繰り返す">
+                繰り返す
               </button>
-            ))}
+            )}
           </div>
-          <p>音声認識: {transcript}</p>
-          <button id="start-recognition">
-            音声で答える
-          </button>
+          <div className="button-container">
+            {fallbackOptions ? (
+              fallbackOptions.map((option, index) => (
+                <button key={index} onClick={() => handleOptionClick(option.text, option.nextQuestionId)}>
+                  {option.text}
+                </button>
+              ))
+            ) : (
+              currentQuestion.options.map((option, index) => (
+                <button key={index} onClick={() => handleOptionClick(option.text, option.nextQuestionId)}>
+                  {option.text}
+                </button>
+              ))
+            )}
+            {mode === 'voice' && !fallbackOptions && (
+              <button id="start-recognition" className="voice-button">
+                音声で答える
+              </button>
+            )}
+          </div>
         </div>
       )}
       <div className="diagnostic-history">

@@ -1,76 +1,194 @@
-/* App.css */
+:root {
+  --primary-color: #3498db;
+  --secondary-color: #2ecc71;
+  --background-color: #f0f4f8;
+  --text-color: #333333;
+  --button-hover-color: #2980b9;
+  --repeat-button-color: #95a5a6;
+}
 
-/* ページ全体の背景とフォント */
 body {
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  line-height: 1.6;
+  color: var(--text-color);
+  background-color: var(--background-color);
   margin: 0;
   padding: 0;
-  font-family: 'Arial', sans-serif;
-  background-color: #f0f0f5;
 }
 
-/* 全体のレイアウトを中央寄せ */
 .App {
-  text-align: center;
-  padding: 20px;
-}
-
-/* 大きな見出し */
-h1 {
-  color: #333;
-  font-size: 2.5rem;
-  margin-bottom: 20px;
-}
-
-/* 質問部分のスタイル */
-h2 {
-  color: #555;
-  font-size: 1.5rem;
-  margin-bottom: 20px;
-}
-
-/* 質問コンテナ部分の背景色と影 */
-.container {
   max-width: 800px;
   margin: 0 auto;
   padding: 20px;
-  background-color: #fff;
-  box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
-  border-radius: 10px;
 }
 
-/* ボタンをグリッド状に並べるための親要素のスタイル */
+h1 {
+  font-size: 2.5rem;
+  color: var(--primary-color);
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+h2 {
+  font-size: 1.8rem;
+  color: var(--text-color);
+  margin-bottom: 20px;
+}
+
+.container {
+  background-color: white;
+  border-radius: 10px;
+  padding: 30px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  margin-bottom: 30px;
+}
+
+.question-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.repeat-button {
+  background-color: var(--repeat-button-color);
+  border: none;
+  color: white;
+  padding: 8px 15px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 14px;
+  margin: 4px 2px;
+  cursor: pointer;
+  border-radius: 20px;
+  transition: background-color 0.3s ease;
+}
+
+.repeat-button:hover {
+  background-color: #7f8c8d;
+}
+
 .button-container {
   display: flex;
-  flex-wrap: wrap; /* ボタンを折り返す設定 */
-  justify-content: space-between; /* ボタンを均等に配置 */
-  max-width: 1000px; /* ボタンの配置幅を指定 */
-  margin: 0 auto;
-  gap: 10px; /* ボタン同士の間隔を設定 */
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
 }
 
-/* ボタンのスタイル */
 button {
+  font-size: 1.2rem;
   padding: 15px 30px;
-  font-size: 1.25rem;
-  background-color: #4CAF50;
-  color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 50px;
+  background-color: var(--primary-color);
+  color: white;
   cursor: pointer;
-  flex: 1 1 calc(20% - 20px); /* 5つ並べるための設定 */
-  margin: 5px; /* ボタン同士の余白 */
+  transition: all 0.3s ease;
+  width: 80%;
+  max-width: 300px;
 }
 
-/* ボタンをホバーしたときの効果 */
-button:hover {
-  background-color: #45a049;
+button:hover, button:focus {
+  background-color: var(--button-hover-color);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
-/* モバイル用のレスポンシブデザイン */
+.voice-button {
+  background-color: var(--secondary-color);
+  margin-top: 20px;
+}
+
+.voice-button:hover, .voice-button:focus {
+  background-color: #27ae60;
+}
+
+.mode-selection {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.mode-selection button {
+  font-size: 1.3rem;
+  padding: 20px 40px;
+}
+
+.diagnostic-history {
+  background-color: white;
+  border-radius: 10px;
+  padding: 30px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.diagnostic-history h3 {
+  font-size: 1.5rem;
+  color: var(--primary-color);
+  margin-bottom: 20px;
+}
+
+.diagnostic-history ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+.diagnostic-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.diagnostic-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.question-answer {
+  flex-grow: 1;
+  margin-right: 15px;
+}
+
+.question-answer strong {
+  color: var(--primary-color);
+}
+
+.edit-button {
+  background-color: var(--secondary-color);
+  padding: 8px 15px;
+  font-size: 0.9rem;
+  border-radius: 20px;
+}
+
+.return-button {
+  background-color: var(--primary-color);
+  padding: 15px 30px;
+  font-size: 1.1rem;
+  margin-top: 30px;
+  display: block;
+  width: 200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.diagnostic-history input {
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 1rem;
+}
+
 @media (max-width: 600px) {
-  button {
-    width: 100%; /* ボタンが画面全体に広がる */
-    font-size: 1.1rem;
+  .App {
+    padding: 15px;
   }
 
   h1 {
@@ -78,6 +196,26 @@ button:hover {
   }
 
   h2 {
-    font-size: 1.2rem;
+    font-size: 1.5rem;
+  }
+
+  button {
+    font-size: 1rem;
+    padding: 12px 24px;
+  }
+
+  .mode-selection button {
+    font-size: 1.1rem;
+    padding: 15px 30px;
+  }
+
+  .diagnostic-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .edit-button {
+    margin-top: 10px;
+    align-self: flex-end;
   }
 }
