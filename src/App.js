@@ -1,51 +1,66 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 
+// 新しい質問データ（紹介状、資料、身体所見を追加）
 const questionsData = [
   {
     id: 1,
-    question: "体の痛みはありますか？",
+    question: "紹介状はお持ちですか？",
     options: [
       { text: "はい", nextQuestionId: 2 },
-      { text: "いいえ", nextQuestionId: 3 }
+      { text: "いいえ", nextQuestionId: 2 }
     ]
   },
   {
     id: 2,
-    question: "痛みがある部位を教えてください。",
+    question: "資料はお持ちですか？",
     options: [
-      { text: "頭", nextQuestionId: 4 },
-      { text: "腹部", nextQuestionId: 4 }
+      { text: "はい", nextQuestionId: 3 },
+      { text: "いいえ", nextQuestionId: 3 }
     ]
   },
   {
     id: 3,
-    question: "特に問題がないようですね。ほかに質問はありますか？",
-    options: [
-      { text: "はい", nextQuestionId: 5 },
-      { text: "いいえ", nextQuestionId: null }
-    ]
+    question: "身長を教えてください。（cm）",
+    inputType: "number",
+    nextQuestionId: 4
   },
   {
     id: 4,
-    question: "痛みの度合いを教えてください（1〜10）。",
-    options: Array.from({ length: 10 }, (_, i) => ({
-      text: `${i + 1}`,
-      nextQuestionId: null
-    }))
+    question: "体重を教えてください。（kg）",
+    inputType: "number",
+    nextQuestionId: 5
   },
   {
     id: 5,
-    question: "別の症状を教えてください。",
+    question: "血圧の上（収縮期血圧）を教えてください。（mmHg）",
+    inputType: "number",
+    nextQuestionId: 6
+  },
+  {
+    id: 6,
+    question: "血圧の下（拡張期血圧）を教えてください。（mmHg）",
+    inputType: "number",
+    nextQuestionId: 7
+  },
+  {
+    id: 7,
+    question: "脈拍を教えてください。（bpm）",
+    inputType: "number",
+    nextQuestionId: 8
+  },
+  {
+    id: 8,
+    question: "利き手はどちらですか？",
     options: [
-      { text: "頭痛", nextQuestionId: 4 },
-      { text: "発熱", nextQuestionId: 4 }
+      { text: "右手", nextQuestionId: null },
+      { text: "左手", nextQuestionId: null }
     ]
   }
 ];
 
 function App() {
-  const [currentQuestionId, setCurrentQuestionId] = useState(0);
+  const [currentQuestionId, setCurrentQuestionId] = useState(1);
   const [recognitionActive, setRecognitionActive] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [diagnosticHistory, setDiagnosticHistory] = useState([]);
@@ -53,6 +68,7 @@ function App() {
   const [isCompleted, setIsCompleted] = useState(false);
   const [editingIndex, setEditingIndex] = useState(null);
   const [fallbackOptions, setFallbackOptions] = useState(null);
+  const [inputValue, setInputValue] = useState(''); // 入力値を管理する状態
   const speechSynthesisRef = useRef(null);
 
   const currentQuestion = questionsData.find(q => q.id === currentQuestionId);
@@ -102,12 +118,12 @@ function App() {
 
   const handleVoiceCommand = (speechResult) => {
     const normalizedResult = speechResult.trim().toLowerCase();
-    
+
     const yesExpressions = ['はい', 'そうです', 'ええ', 'あります', 'はい、です'];
     const noExpressions = ['いいえ', 'ちがいます', 'ありません', 'いいえ、違います'];
 
     const findMatchingOption = () => {
-      return currentQuestion.options.find(option => {
+      return currentQuestion.options?.find(option => {
         const optionText = option.text.toLowerCase();
         if (yesExpressions.includes(optionText)) {
           return yesExpressions.some(expr => normalizedResult.includes(expr));
@@ -142,8 +158,23 @@ function App() {
 
     if (nextQuestionId) {
       setCurrentQuestionId(nextQuestionId);
+      setInputValue(''); // 次の質問に進む際に入力フィールドをクリア
     } else {
       completeDiagnosis();
+    }
+  };
+
+  // 身体所見の入力完了ボタンで次へ進む
+  const handleInputSubmit = (nextQuestionId) => {
+    if (inputValue.trim() !== '') {
+      setDiagnosticHistory(prevHistory => [
+        ...prevHistory,
+        { question: currentQuestion.question, answer: inputValue }
+      ]);
+      setCurrentQuestionId(nextQuestionId);
+      setInputValue(''); // 次の質問に進む際に入力フィールドをクリア
+    } else {
+      alert("入力を確認してください。");
     }
   };
 
@@ -277,18 +308,24 @@ function App() {
             )}
           </div>
           <div className="button-container">
-            {fallbackOptions ? (
-              fallbackOptions.map((option, index) => (
+            {currentQuestion.options ? (
+              (fallbackOptions || currentQuestion.options).map((option, index) => (
                 <button key={index} onClick={() => handleOptionClick(option.text, option.nextQuestionId)}>
                   {option.text}
                 </button>
               ))
             ) : (
-              currentQuestion.options.map((option, index) => (
-                <button key={index} onClick={() => handleOptionClick(option.text, option.nextQuestionId)}>
-                  {option.text}
+              <div>
+                <input
+                  type={currentQuestion.inputType || 'text'}
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  placeholder="入力してください"
+                />
+                <button onClick={() => handleInputSubmit(currentQuestion.nextQuestionId)}>
+                  入力完了
                 </button>
-              ))
+              </div>
             )}
             {mode === 'voice' && !fallbackOptions && (
               <button id="start-recognition" className="voice-button">
